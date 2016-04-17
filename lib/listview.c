@@ -113,9 +113,10 @@ void listview_destroy(listview *view)
 listview_item *listview_add_item(listview *view, int id, void *data)
 {
     listview_item *it = mzalloc(sizeof(listview_item));
+    rom_item_data* d = data;
     it->id = id;
     it->data = data;
-    it->flags = 0;
+    it->flags = d && d->text && strlen(d->text) == 0 ? IT_INACTIVE : 0;
     it->parent_rect = (fb_item_pos*)view;
 
     if(!view->items)
@@ -351,17 +352,25 @@ int listview_touch_handler(touch_event *ev, void *data)
 
 int listview_select_item(listview *view, listview_item *it)
 {
-    if(view->selected == it)
+    if (it && it->flags & IT_INACTIVE) {
         return 0;
+    }
 
-    if(view->item_selected)
+    if (view->selected == it) {
+        return 0;
+    }
+
+    if (view->item_selected) {
         (*view->item_selected)(view->selected, it);
+    }
 
-    if(view->selected)
+    if (view->selected) {
         view->selected->flags &= ~(IT_SELECTED);
+    }
 
-    if(it)
+    if (it) {
         it->flags |= IT_SELECTED;
+    }
 
     view->selected = it;
     return 1;
@@ -530,22 +539,6 @@ void listview_update_keyact_frame(listview *view)
 #define ROM_TEXT_PADDING_R ((ROM_TEXT_PADDING_L - ROM_ICON_H)/2)
 #define ROM_ICON_PADDING (ROM_TEXT_PADDING_L/2 - ROM_ICON_H/2)
 
-typedef struct
-{
-    char *text;
-    char *partition;
-    char *icon_path;
-    fb_text *text_it;
-    fb_text *part_it;
-    fb_rect *sel_rect;
-    fb_rect *sel_rect_sh;
-    fb_img *icon;
-    int deselect_anim_started;
-    int rom_name_size;
-    int last_y;
-    int last_x;
-} rom_item_data;
-
 void *rom_item_create(const char *text, const char *partition, const char *icon)
 {
     rom_item_data *data = mzalloc(sizeof(rom_item_data));
@@ -692,32 +685,35 @@ void rom_item_draw(int x, int y, int w, listview_item *it)
         d->icon->y = y + (item_h/2 - ROM_ICON_H/2);
     }
 
-    if(it->flags & IT_SELECTED)
+    if (!(it->flags & IT_INACTIVE))
     {
-        if(!d->sel_rect)
+        if(it->flags & IT_SELECTED)
         {
-            rom_item_select(x, y, w, item_h, it, d);
+            if(!d->sel_rect)
+            {
+                rom_item_select(x, y, w, item_h, it, d);
+            }
+            else
+            {
+                d->sel_rect_sh->x += x - d->last_x;
+                d->sel_rect->x += x - d->last_x;
+                d->sel_rect_sh->y += y - d->last_y;
+                d->sel_rect->y += y - d->last_y;
+            }
         }
-        else
+        else if(d->sel_rect)
         {
-            d->sel_rect_sh->x += x - d->last_x;
-            d->sel_rect->x += x - d->last_x;
-            d->sel_rect_sh->y += y - d->last_y;
-            d->sel_rect->y += y - d->last_y;
-        }
-    }
-    else if(d->sel_rect)
-    {
-        if(!d->deselect_anim_started)
-        {
-            rom_item_deselect(x, y, w, item_h, it, d);
-        }
-        else
-        {
-            d->sel_rect_sh->x += x - d->last_x;
-            d->sel_rect->x += x - d->last_x;
-            d->sel_rect_sh->y += y - d->last_y;
-            d->sel_rect->y += y - d->last_y;
+            if(!d->deselect_anim_started)
+            {
+                rom_item_deselect(x, y, w, item_h, it, d);
+            }
+            else
+            {
+                d->sel_rect_sh->x += x - d->last_x;
+                d->sel_rect->x += x - d->last_x;
+                d->sel_rect_sh->y += y - d->last_y;
+                d->sel_rect->y += y - d->last_y;
+            }
         }
     }
 

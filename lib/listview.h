@@ -27,6 +27,7 @@ enum
     IT_VISIBLE  = 0x01,
     IT_HOVER    = 0x02,
     IT_SELECTED = 0x04,
+    IT_INACTIVE = 0x08,
 };
 
 typedef struct
@@ -74,6 +75,22 @@ typedef struct
     listview_touch_data touch;
     touch_tracker *tracker;
 } listview;
+
+typedef struct
+{
+    char *text;
+    char *partition;
+    char *icon_path;
+    fb_text *text_it;
+    fb_text *part_it;
+    fb_rect *sel_rect;
+    fb_rect *sel_rect_sh;
+    fb_img *icon;
+    int deselect_anim_started;
+    int rom_name_size;
+    int last_y;
+    int last_x;
+} rom_item_data;
 
 int listview_touch_handler(touch_event *ev, void *data);
 
