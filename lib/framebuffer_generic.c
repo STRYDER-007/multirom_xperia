@@ -34,6 +34,12 @@
 // for the code to know how many buffers we use
 #define NUM_BUFFERS 2
 
+/*
+ * For this device, the framebuffer start needs to be aligned to a 4096-byte
+ * boundary.
+ */
+#define FB_MEM_ALIGN 0x1000
+
 struct fb_generic_data {
     px_type *mapped[NUM_BUFFERS];
     int active_buff;
@@ -127,9 +133,14 @@ static int impl_open(struct framebuffer *fb)
     if (mapped == MAP_FAILED)
         return -1;
 
+    unsigned fb_size = fb->vi.yres * fb->fi.line_length;
+    if (fb_size % FB_MEM_ALIGN != 0) {
+        fb_size += FB_MEM_ALIGN - fb_size % FB_MEM_ALIGN;
+    }
+
     struct fb_generic_data *data = mzalloc(sizeof(struct fb_generic_data));
     data->mapped[0] = mapped;
-    data->mapped[1] = (px_type*) (((uint8_t*)mapped) + (fb->vi.yres * fb->fi.line_length));
+    data->mapped[1] = (px_type*) (((uint8_t*)mapped) + (fb_size));
 
     fb->impl_data = data;
 
