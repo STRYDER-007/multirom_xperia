@@ -41,7 +41,7 @@ ifeq ($(MR_DPI),)
     $(info MR_DPI not defined in device files)
 else ifeq ($(MR_DPI),hdpi)
 ifeq ($(MR_DPI_MUL),)
-    MR_DPI_MUL := 1
+    MR_DPI_MUL := 0.8
 endif
 else ifeq ($(MR_DPI),xhdpi)
 ifeq ($(MR_DPI_MUL),)
